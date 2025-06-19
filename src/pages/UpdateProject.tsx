@@ -1,8 +1,18 @@
 import { useState } from "react";
 
 const UpdateProject = () => {
+  type Project = {
+    projectName: string;
+    projectDescription: string;
+    projectTime: string;
+    projectAddress: string;
+    projectMeetingOutcome: string;
+    projectworked: string;
+  };
+
+  const [existingData, setExistingData] = useState<Project | null>(null);
+
   const [clientId, setClientId] = useState("");
-  const [existingData, setExistingData] = useState(null);
   const [formData, setFormData] = useState({
     projectName: "",
     projectDescription: "",
@@ -30,12 +40,20 @@ const UpdateProject = () => {
     }
   };
 
-  const handleChange = async (e: React.FormEvent<HTMLFormElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleUpdateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!existingData) {
+      alert("❌ No existing project data found. Please fetch first.");
+      return;
+    }
 
     try {
       const res = await fetch(
