@@ -2,19 +2,23 @@ import { useState } from "react";
 
 const UpdateProject = () => {
   type Project = {
- 
+    projectName: string;
     projectDescription: string;
     projectTime: string;
     projectAddress: string;
     projectMeetingOutcome: string;
     projectworked: string;
+    projectClientID: number;
+    projectClientName: string;
+    projectContactNumber: string;
+    projectType: string;
   };
 
   const [existingData, setExistingData] = useState<Project | null>(null);
   const [clientId, setClientId] = useState("");
   const [notFound, setNotFound] = useState(false);
+
   const [formData, setFormData] = useState({
-   
     projectDescription: "",
     address: "",
     meetingDate: "",
@@ -75,13 +79,13 @@ const UpdateProject = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            projectName:
-              formData.projectName || existingData.projectName + " - Update",
+            // projectName taken from existing project
+            projectName: existingData.projectName + " - Update",
             projectDescription: formData.projectDescription,
             projectTime: new Date(formData.meetingDate).toISOString(),
             projectAddress: formData.address,
-            projectMeetingOutcome: formData.meetingOutcome,
-            projectworked: formData.pointsToBeWorked,
+            projectMeetingOutcome: formData.meetingOutcome || null,
+            projectworked: formData.pointsToBeWorked || null,
           }),
         }
       );
@@ -90,7 +94,6 @@ const UpdateProject = () => {
       if (result.success) {
         alert("✅ New project added (based on existing one)!");
         setFormData({
-          projectName: "",
           projectDescription: "",
           address: "",
           meetingDate: "",
@@ -142,7 +145,6 @@ const UpdateProject = () => {
 
         {existingData && (
           <form onSubmit={handleUpdateSubmit} className="space-y-4 mt-4">
-          
             <input
               type="datetime-local"
               name="meetingDate"
