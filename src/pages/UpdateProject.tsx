@@ -11,8 +11,8 @@ const UpdateProject = () => {
   };
 
   const [existingData, setExistingData] = useState<Project | null>(null);
-
   const [clientId, setClientId] = useState("");
+  const [notFound, setNotFound] = useState(false);
   const [formData, setFormData] = useState({
     projectName: "",
     projectDescription: "",
@@ -21,22 +21,35 @@ const UpdateProject = () => {
     meetingOutcome: "",
     pointsToBeWorked: "",
   });
-  const [notFound, setNotFound] = useState(false);
 
   const handleClientIdSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const res = await fetch(`getProject/${clientId}`);
-      const data = await res.json();
-      if (data && data.length > 0) {
-        setExistingData(data[0]);
-        setNotFound(false);
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/getProject/${clientId}`
+      );
+      const contentType = res.headers.get("Content-Type") || "";
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Server error: ${errorText}`);
+      }
+
+      if (contentType.includes("application/json")) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          setExistingData(data[0]);
+          setNotFound(false);
+        } else {
+          setNotFound(true);
+        }
       } else {
-        setNotFound(true);
+        const text = await res.text();
+        throw new Error(`Unexpected response: ${text}`);
       }
     } catch (err) {
       console.error(err);
-      alert("Error fetching project.");
+      alert("❌ Error fetching project.");
     }
   };
 
