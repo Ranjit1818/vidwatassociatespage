@@ -13,7 +13,7 @@ const UpdateProject = () => {
   });
   const [notFound, setNotFound] = useState(false);
 
-  const handleClientIdSubmit = async (e) => {
+  const handleClientIdSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       const res = await fetch(`getProject/${clientId}`);
@@ -30,11 +30,11 @@ const UpdateProject = () => {
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = async (e: React.FormEvent<HTMLFormElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleUpdateSubmit = async (e) => {
+  const handleUpdateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
