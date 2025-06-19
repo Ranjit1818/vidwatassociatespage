@@ -28,6 +28,12 @@ const Home = () => {
         >
           📊 View Project
         </Link>
+        <Link
+          to="/update"
+          className="bg-white text-orange-700 hover:bg-orange-100 font-bold py-3 px-6 rounded-full shadow-lg transition duration-300"
+        >
+          🔄 Update Project
+        </Link>
       </div>
     </div>
   );

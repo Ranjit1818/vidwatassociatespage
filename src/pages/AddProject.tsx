@@ -32,7 +32,7 @@ const AddProject = () => {
 
     try {
       const res = await fetch(
-        "https://backend.vidwat.workers.dev/api/addProject",
+        `${import.meta.env.VITE_BACKEND_URL}api/addProject`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
