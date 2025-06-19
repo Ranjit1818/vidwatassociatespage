@@ -2,7 +2,7 @@ import { useState } from "react";
 
 const UpdateProject = () => {
   type Project = {
-    projectName: string;
+ 
     projectDescription: string;
     projectTime: string;
     projectAddress: string;
@@ -14,7 +14,7 @@ const UpdateProject = () => {
   const [clientId, setClientId] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [formData, setFormData] = useState({
-    projectName: "",
+   
     projectDescription: "",
     address: "",
     meetingDate: "",
@@ -142,15 +142,7 @@ const UpdateProject = () => {
 
         {existingData && (
           <form onSubmit={handleUpdateSubmit} className="space-y-4 mt-4">
-            <input
-              type="text"
-              name="projectName"
-              value={formData.projectName}
-              onChange={handleChange}
-              placeholder="New Project Name"
-              required
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            />
+          
             <input
               type="datetime-local"
               name="meetingDate"
