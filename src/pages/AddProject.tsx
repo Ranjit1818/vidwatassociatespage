@@ -32,7 +32,7 @@ const AddProject = () => {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}api/addProject`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/addProject`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -51,7 +51,10 @@ const AddProject = () => {
         }
       );
 
-      const result = await res.json();
+      console.log("Response status:", res.status); // 🔍
+      const result = await res.json(); // might fail if not JSON!
+      console.log("Response JSON:", result); // 🔍
+
       if (result.success) {
         alert("✅ Project submitted successfully!");
         setFormData({
@@ -70,7 +73,7 @@ const AddProject = () => {
         alert("❌ Submission failed.");
       }
     } catch (err) {
-      console.error(err);
+      console.error("❌ Fetch Error:", err);
       alert("❌ Something went wrong!");
     }
   };

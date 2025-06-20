@@ -20,7 +20,6 @@ const UpdateProject = () => {
 
   const [formData, setFormData] = useState({
     projectDescription: "",
-    address: "",
     meetingDate: "",
     meetingOutcome: "",
     pointsToBeWorked: "",
@@ -30,7 +29,7 @@ const UpdateProject = () => {
     e.preventDefault();
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/getProject/${clientId}`
+        `${import.meta.env.VITE_BACKEND_URL}/api/getProject/${clientId}`
       );
       const contentType = res.headers.get("Content-Type") || "";
 
@@ -74,11 +73,14 @@ const UpdateProject = () => {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/cloneAndAddProject/${clientId}`,
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/cloneAndAddProject/${clientId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+<<<<<<< HEAD
             // projectName taken from existing project
             projectName: existingData.projectName + " - Update",
             projectDescription: formData.projectDescription,
@@ -86,6 +88,14 @@ const UpdateProject = () => {
             projectAddress: formData.address,
             projectMeetingOutcome: formData.meetingOutcome || null,
             projectworked: formData.pointsToBeWorked || null,
+=======
+            projectName: existingData.projectName + " - Update",
+            projectDescription: formData.projectDescription,
+            projectTime: new Date(formData.meetingDate).toISOString(),
+            projectAddress: existingData.projectAddress, // ✅ Auto-use existing address
+            projectMeetingOutcome: formData.meetingOutcome,
+            projectworked: formData.pointsToBeWorked,
+>>>>>>> 3cd2c3e (ui update)
           }),
         }
       );
@@ -95,7 +105,6 @@ const UpdateProject = () => {
         alert("✅ New project added (based on existing one)!");
         setFormData({
           projectDescription: "",
-          address: "",
           meetingDate: "",
           meetingOutcome: "",
           pointsToBeWorked: "",
@@ -161,15 +170,6 @@ const UpdateProject = () => {
               rows={3}
               className="w-full p-3 border border-gray-300 rounded-lg"
               required
-            />
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              placeholder="Updated Address"
-              required
-              className="w-full p-3 border border-gray-300 rounded-lg"
             />
             <textarea
               name="meetingOutcome"

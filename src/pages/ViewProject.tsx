@@ -1,7 +1,6 @@
 import { useState } from "react";
 import jsPDF from "jspdf";
 
-// Define Project type matching your schema
 type Project = {
   projectId: number;
   projectName: string;
@@ -21,13 +20,23 @@ const ViewProject = () => {
   const [projectData, setProjectData] = useState<Project[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  const showNotification = (type: "success" | "error", message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   const handleFetch = async () => {
     setError("");
     setProjectData([]);
     setLoading(true);
 
-    if (!userId || isNaN(Number(userId))) {
+    const trimmedId = userId.trim();
+    if (!trimmedId || isNaN(Number(trimmedId))) {
       setError("❌ Please enter a valid numeric Client ID.");
       setLoading(false);
       return;
@@ -35,14 +44,15 @@ const ViewProject = () => {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/getProject/${userId}`
+        `${import.meta.env.VITE_BACKEND_URL}/api/getProject/${trimmedId}`
       );
-      if (!res.ok) throw new Error("Project not found");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
       setProjectData(data);
-    } catch (err) {
-      setError("❌ Could not fetch project. Make sure the ID is correct.");
+    } catch (err: any) {
+      console.error("❌ Fetch error:", err);
+      setError("❌ Could not fetch project. " + (err.message || ""));
     }
 
     setLoading(false);
@@ -51,14 +61,11 @@ const ViewProject = () => {
   const handleDownload = async (project: Project) => {
     try {
       const pdf = new jsPDF();
-
-      // 🟩 Header
       pdf.setFontSize(26);
       pdf.setFont("helvetica", "bold");
       pdf.text("VIDWAT", 105, 20, { align: "center" });
 
       pdf.setFontSize(14);
-      pdf.setFont("helvetica", "bold");
       pdf.text("Architects and Engineers", 105, 30, { align: "center" });
 
       pdf.setFontSize(12);
@@ -73,14 +80,9 @@ const ViewProject = () => {
       pdf.line(20, 45, 190, 45);
 
       let y = 55;
+      const labelStyle = () => pdf.setFont("helvetica", "bold");
+      const valueStyle = () => pdf.setFont("helvetica", "normal");
 
-      const labelStyle = () => {
-        pdf.setFontSize(12);
-        pdf.setFont("helvetica", "bold");
-      };
-      const valueStyle = () => {
-        pdf.setFont("helvetica", "normal");
-      };
       const printRow = (label: string, value: string | number) => {
         labelStyle();
         pdf.text(label, 20, y);
@@ -89,7 +91,6 @@ const ViewProject = () => {
         y += 10;
       };
 
-      // 🟨 Metadata
       printRow("Client ID:", project.projectClientID);
       printRow("Client Name:", project.projectClientName);
       printRow("Contact Number:", project.projectContactNumber);
@@ -98,7 +99,6 @@ const ViewProject = () => {
       printRow("Project Type:", project.projectType);
       printRow("Meeting Date:", new Date(project.projectTime).toLocaleString());
 
-      // 🟦 Description
       y += 10;
       pdf.setFont("helvetica", "bold");
       pdf.text("Description:", 20, y);
@@ -107,97 +107,62 @@ const ViewProject = () => {
         project.projectDescription || "-",
         160
       );
-      const descBoxHeight = descText.length * 7 + 5;
-      const descBoxTop = y + 2;
-
-      pdf.setDrawColor(80);
-      pdf.setLineWidth(0.2);
-      pdf.setFillColor(255, 255, 255);
-      pdf.rect(20, descBoxTop, 170, descBoxHeight, "S");
-
+      const descHeight = descText.length * 7 + 5;
+      pdf.rect(20, y + 2, 170, descHeight, "S");
       pdf.setFont("helvetica", "normal");
-      pdf.text(descText, 25, descBoxTop + 8);
+      pdf.text(descText, 25, y + 10);
+      y += descHeight + 12;
 
-      y = descBoxTop + descBoxHeight + 10;
-
-      // 🟪 Meeting Outcome Section
-      if (project.projectMeetingOutcome) {
+      if (project.projectMeetingOutcome?.trim()) {
         pdf.setFont("helvetica", "bold");
         pdf.text("Meeting Outcome:", 20, y);
-
         const outcomeText = pdf.splitTextToSize(
-          project.projectMeetingOutcome || "-",
+          project.projectMeetingOutcome,
           160
         );
-        const outcomeBoxHeight = outcomeText.length * 7 + 5;
-        const outcomeBoxTop = y + 2;
-
-        pdf.setDrawColor(80);
-        pdf.setLineWidth(0.2);
-        pdf.setFillColor(255, 255, 255);
-        pdf.rect(20, outcomeBoxTop, 170, outcomeBoxHeight, "S");
-
+        const outHeight = outcomeText.length * 7 + 5;
+        pdf.rect(20, y + 2, 170, outHeight, "S");
         pdf.setFont("helvetica", "normal");
-        pdf.text(outcomeText, 25, outcomeBoxTop + 8);
-
-        y = outcomeBoxTop + outcomeBoxHeight + 10;
+        pdf.text(outcomeText, 25, y + 10);
+        y += outHeight + 12;
       }
-      // 🟫 Points to be Worked (bullet list)
-      if (project.projectworked) {
+
+      if (project.projectworked?.trim()) {
         pdf.setFont("helvetica", "bold");
         pdf.text("Points to be Worked:", 20, y);
-
         const bulletPoints = project.projectworked
           .split(",")
           .map((item) => item.trim())
           .filter((item) => item.length > 0);
 
-        const bulletYStart = y + 8;
-        let currentY = bulletYStart + 6; // 🔹 Add vertical padding inside box
+        let currentY = y + 10;
+        const lines = bulletPoints.flatMap((point) =>
+          pdf.splitTextToSize(point, 150)
+        );
+        const boxHeight = lines.length * 7 + 12;
 
-        let totalLines: string[][] = [];
-
-        // Collect all wrapped lines for calculating box height
-        bulletPoints.forEach((point) => {
-          const wrappedLines = pdf.splitTextToSize(point, 150);
-          totalLines.push(wrappedLines);
-        });
-
-        // Calculate height of box with vertical padding (top+bottom = 12)
-        const totalHeight =
-          totalLines.reduce((sum, lines) => sum + lines.length * 7, 0) + 12;
-
-        // Draw rectangle box (with padding)
-        pdf.setDrawColor(80);
-        pdf.setLineWidth(0.2);
-        pdf.setFillColor(255, 255, 255);
-        pdf.rect(20, bulletYStart, 170, totalHeight, "S");
-
-        // Render the bullet points inside the box with horizontal padding
+        pdf.rect(20, y + 8, 170, boxHeight, "S");
         pdf.setFont("helvetica", "normal");
-        totalLines.forEach((wrappedLines) => {
-          wrappedLines.forEach((line, index) => {
-            const prefix = index === 0 ? "• " : "   ";
-            pdf.text(prefix + line, 25, currentY); // 🔹 25 gives left padding
-            currentY += 7;
-          });
+        lines.forEach((line, index) => {
+          const prefix = index === 0 ? "• " : "   ";
+          pdf.text(prefix + line, 25, currentY);
+          currentY += 7;
         });
 
-        y = bulletYStart + totalHeight + 10; // update y for next section
+        y += boxHeight + 12;
       }
 
-      // Footer: Signature lines
       const pageHeight = pdf.internal.pageSize.height;
-
       pdf.setFont("helvetica", "bold");
-      pdf.text("Sign of Consultant", 20, pageHeight - 20); // bottom-left
-      pdf.text("Sign of Client", 150, pageHeight - 20); // bottom-right
+      pdf.text("Sign of Consultant", 20, pageHeight - 20);
+      pdf.text("Sign of Client", 150, pageHeight - 20);
 
-      // 🔽 Save
-      pdf.save(`${project.projectName || "project"}_${Date.now()}.pdf`);
+      pdf.save(`${project.projectName}_${Date.now()}.pdf`);
+
+      showNotification("success", "✅ PDF downloaded successfully!");
     } catch (error) {
       console.error("PDF generation failed:", error);
-      alert("❌ Failed to download PDF.");
+      showNotification("error", "❌ Failed to download PDF.");
     }
   };
 
@@ -207,63 +172,56 @@ const ViewProject = () => {
     );
     if (!confirmSend) return;
 
-    let phoneNumber = String(project.projectContactNumber).replace(/\s+/g, "");
-
-    // Automatically normalize number to +91 if needed
-    if (!phoneNumber.startsWith("+")) {
-      if (phoneNumber.length === 10) phoneNumber = "+91" + phoneNumber;
-      else if (phoneNumber.length === 12 && phoneNumber.startsWith("91"))
-        phoneNumber = "+" + phoneNumber;
-      else {
-        alert("❌ Invalid contact number in project data.");
-        return;
-      }
+    let phone = project.projectContactNumber.trim();
+    if (!phone.startsWith("+")) {
+      phone =
+        phone.length === 10
+          ? "+91" + phone
+          : phone.length === 12
+          ? "+" + phone
+          : phone;
     }
 
-    if (!/^\+\d{10,15}$/.test(phoneNumber)) {
+    if (!/^\+\d{10,15}$/.test(phone)) {
       alert("❌ Invalid phone number.");
       return;
     }
 
-    // Construct the professional message
-    const message = `
-   *Project Summary Report*  
-   *VIDWAT ASSOCIATES* – Architects &   Engineers  
-  ──────────────────────────
-  
-  *Client Name:* ${project.projectClientName}  
-  *Contact Number:* ${project.projectContactNumber}  
-  *Client ID:* ${project.projectClientID}  
-  
-  *Project Name:* ${project.projectName}  
-  *Project Type:* ${project.projectType}  
-  *Meeting Time:* ${new Date(project.projectTime).toLocaleString()}  
-  
-  *Address:*  
-  ${project.projectAddress}  
-  
-  *Project Description:*  
-  ${project.projectDescription || "-"}
-  
-  ${
-    project.projectMeetingOutcome
-      ? `\n *Meeting Outcome:*  \n ${project.projectMeetingOutcome}`
-      : ""
-  }
-  
- 
-  ──────────────────────────
-  *Report Generated By:* VIDWAT Team  
-   Vijayapur
-  `;
+    const msg = `
+*Project Summary Report*  
+*VIDWAT ASSOCIATES* – Architects & Engineers  
+──────────────────────────
 
-    const encodedMessage = encodeURIComponent(message);
-    const waLink = `https://wa.me/${phoneNumber.replace(
+*Client Name:* ${project.projectClientName}  
+*Contact Number:* ${project.projectContactNumber}  
+*Client ID:* ${project.projectClientID}  
+
+*Project Name:* ${project.projectName}  
+*Project Type:* ${project.projectType}  
+*Meeting Time:* ${new Date(project.projectTime).toLocaleString()}  
+
+*Address:*  
+${project.projectAddress}  
+
+*Project Description:*  
+${project.projectDescription || "-"}
+
+${
+  project.projectMeetingOutcome
+    ? `\n*Meeting Outcome:*  \n${project.projectMeetingOutcome}`
+    : ""
+}
+
+──────────────────────────
+*Report Generated By:* VIDWAT Team  
+Vijayapur
+    `.trim();
+
+    const link = `https://wa.me/${phone.replace(
       "+",
       ""
-    )}?text=${encodedMessage}`;
-
-    const win = window.open(waLink, "_blank");
+    )}?text=${encodeURIComponent(msg)}`;
+    const win = window.open(link, "_blank");
     if (!win) {
       alert(
         "⚠️ Pop-up blocked! Please allow pop-ups for this site in your browser."
@@ -272,7 +230,17 @@ const ViewProject = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-200 via-blue-300 to-purple-300 p-8 flex justify-center items-center">
+    <div className="min-h-screen bg-gradient-to-br from-green-200 via-blue-300 to-purple-300 p-8 flex justify-center items-center relative">
+      {notification && (
+        <div
+          className={`fixed top-5 right-5 px-4 py-3 rounded shadow-lg text-white transition-opacity duration-500 ${
+            notification.type === "success" ? "bg-green-600" : "bg-red-600"
+          }`}
+        >
+          {notification.message}
+        </div>
+      )}
+
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg">
         <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
           Vidwat Associates
@@ -284,7 +252,7 @@ const ViewProject = () => {
         <input
           type="text"
           value={userId}
-          onChange={(e) => setUserId(e.target.value)}
+          onChange={(e) => setUserId(e.target.value.trim())}
           placeholder="Enter Client ID"
           className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -304,68 +272,42 @@ const ViewProject = () => {
             {projectData.map((project) => (
               <div
                 key={project.projectId}
-                className="bg-gray-100 p-4 rounded-lg shadow-inner space-y-2 relative"
+                className="bg-gray-100 p-4 rounded-lg shadow-inner space-y-2"
               >
                 <p>
-                  <strong className="text-gray-600">Name:</strong>{" "}
-                  <span className="text-gray-800">
-                    {project.projectClientName}
-                  </span>
+                  <strong>Name:</strong> {project.projectClientName}
                 </p>
                 <p>
-                  <strong className="text-gray-600">Phone:</strong>{" "}
-                  <span className="text-gray-800">
-                    {project.projectContactNumber}
-                  </span>
+                  <strong>Phone:</strong> {project.projectContactNumber}
                 </p>
                 <p>
-                  <strong className="text-gray-600">Client ID:</strong>{" "}
-                  <span className="text-gray-800">
-                    {project.projectClientID}
-                  </span>
+                  <strong>Client ID:</strong> {project.projectClientID}
                 </p>
                 <p>
-                  <strong className="text-gray-600">Project Name:</strong>{" "}
-                  <span className="text-gray-800">{project.projectName}</span>
+                  <strong>Project Name:</strong> {project.projectName}
                 </p>
                 <p>
-                  <strong className="text-gray-600">Project Type:</strong>{" "}
-                  <span className="text-gray-800">{project.projectType}</span>
+                  <strong>Project Type:</strong> {project.projectType}
                 </p>
                 <p>
-                  <strong className="text-gray-600">Meeting Time:</strong>{" "}
-                  <span className="text-gray-800">
-                    {new Date(project.projectTime).toLocaleString()}
-                  </span>
+                  <strong>Meeting Time:</strong>{" "}
+                  {new Date(project.projectTime).toLocaleString()}
                 </p>
                 <p>
-                  <strong className="text-gray-600">Address:</strong>{" "}
-                  <span className="text-gray-800">
-                    {project.projectAddress}
-                  </span>
+                  <strong>Address:</strong> {project.projectAddress}
                 </p>
                 <p>
-                  <strong className="text-gray-600">Description:</strong>{" "}
-                  <span className="text-gray-800">
-                    {project.projectDescription}
-                  </span>
+                  <strong>Description:</strong> {project.projectDescription}
                 </p>
                 {project.projectMeetingOutcome && (
                   <p>
-                    <strong className="text-gray-600">Outcome:</strong>{" "}
-                    <span className="text-gray-800">
-                      {project.projectMeetingOutcome}
-                    </span>
+                    <strong>Outcome:</strong> {project.projectMeetingOutcome}
                   </p>
                 )}
                 {project.projectworked && (
                   <p>
-                    <strong className="text-gray-600">
-                      Points to be worked:
-                    </strong>{" "}
-                    <span className="text-gray-800">
-                      {project.projectworked}
-                    </span>
+                    <strong>Points to be worked:</strong>{" "}
+                    {project.projectworked}
                   </p>
                 )}
 

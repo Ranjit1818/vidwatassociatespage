@@ -2,7 +2,7 @@
 
 import { Link } from "react-router-dom";
 
-const Home = () => {
+const SelectAdd = () => {
   return (
     <div className="min-h-screen bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 flex flex-col justify-center items-center text-white px-4">
       <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
@@ -17,20 +17,20 @@ const Home = () => {
       </p>
       <div className="flex gap-6 flex-col sm:flex-row">
         <Link
-          to="/select"
+          to="/add"
           className="bg-white text-purple-700 hover:bg-purple-100 font-bold py-3 px-6 rounded-full shadow-lg transition duration-300"
         >
-          ➕ Add Project
+          ➕ Add Project for new client
         </Link>
         <Link
-          to="/view"
-          className="bg-white text-green-700 hover:bg-green-100 font-bold py-3 px-6 rounded-full shadow-lg transition duration-300"
+          to="/update"
+          className="bg-white text-orange-700 hover:bg-orange-100 font-bold py-3 px-6 rounded-full shadow-lg transition duration-300"
         >
-          📊 View Project
+          🔄 Add Project for existing client
         </Link>
       </div>
     </div>
   );
 };
 
-export default Home;
+export default SelectAdd;
