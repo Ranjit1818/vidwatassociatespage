@@ -44,7 +44,7 @@ const ViewProject = () => {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/getProject/${trimmedId}`
+        `${import.meta.env.VITE_BACKEND_URL}/getProject/${trimmedId}`
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
