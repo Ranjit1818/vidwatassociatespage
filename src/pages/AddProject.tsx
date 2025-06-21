@@ -22,61 +22,85 @@ const AddProject = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
 
-    if (!/^\d{10}$/.test(formData.phone)) {
-      alert("Phone number must be exactly 10 digits.");
-      return;
-    }
+  // Validate phone number (10 digits)
+  if (!/^\d{10}$/.test(formData.phone)) {
+    alert("❌ Phone number must be exactly 10 digits.");
+    return;
+  }
 
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/addProject`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            projectName: formData.projectName,
-            projectClientID: parseInt(formData.clientId, 10),
-            projectClientName: formData.name,
-            projectContactNumber: formData.phone,
-            projectType: formData.projectType,
-            projectDescription: formData.description,
-            projectTime: new Date(formData.time).toISOString(),
-            projectAddress: formData.address,
-            projectMeetingOutcome: formData.outcome || null,
-            projectworked: formData.Points_to_be_Worked,
-          }),
-        }
-      );
+  // Validate Client ID
+  const clientIdNumber = parseInt(formData.clientId, 10);
+  if (isNaN(clientIdNumber)) {
+    alert("❌ Client ID must be a valid number.");
+    return;
+  }
 
-      console.log("Response status:", res.status); // 🔍
-      const result = await res.json(); // might fail if not JSON!
-      console.log("Response JSON:", result); // 🔍
-
-      if (result.success) {
-        alert("✅ Project submitted successfully!");
-        setFormData({
-          name: "",
-          phone: "",
-          clientId: "",
-          projectName: "",
-          projectType: "",
-          description: "",
-          time: "",
-          address: "",
-          outcome: "",
-          Points_to_be_Worked: "",
-        });
-      } else {
-        alert("❌ Submission failed.");
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/addProject`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectName: formData.projectName,
+          projectClientID: clientIdNumber,
+          projectClientName: formData.name,
+          projectContactNumber: formData.phone,
+          projectType: formData.projectType,
+          projectDescription: formData.description,
+          projectTime: new Date(formData.time).toISOString(),
+          projectAddress: formData.address,
+          projectMeetingOutcome: formData.outcome || null,
+          Points_to_be_Worked: formData.Points_to_be_Worked, // ✅ use correct key
+        }),
       }
-    } catch (err) {
-      console.error("❌ Fetch Error:", err);
-      alert("❌ Something went wrong!");
+    );
+
+    console.log("📡 Response status:", res.status);
+
+    // Handle non-JSON or failed response
+    const contentType = res.headers.get("Content-Type") || "";
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`❌ Server error: ${errorText}`);
     }
-  };
+
+    if (!contentType.includes("application/json")) {
+      const raw = await res.text();
+      throw new Error(`❌ Unexpected response: ${raw}`);
+    }
+
+    const result = await res.json();
+    console.log("📦 Response JSON:", result);
+
+    if (result.success) {
+      alert("✅ Project submitted successfully!");
+      setFormData({
+        name: "",
+        phone: "",
+        clientId: "",
+        projectName: "",
+        projectType: "",
+        description: "",
+        time: "",
+        address: "",
+        outcome: "",
+        Points_to_be_Worked: "",
+      });
+    } else {
+      alert("❌ Submission failed: " + (result.error || "Unknown error"));
+    }
+  } catch (err) {
+    console.error("❌ Fetch Error:", err);
+    alert("❌ Something went wrong. Check the console for details.");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-tr from-yellow-200 via-red-300 to-pink-300 p-8 flex justify-center items-center">
