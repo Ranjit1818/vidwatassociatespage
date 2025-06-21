@@ -31,8 +31,8 @@ const UpdateProject = () => {
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/getProject/${clientId}`
       );
-      const contentType = res.headers.get("Content-Type") || "";
 
+      const contentType = res.headers.get("Content-Type") || "";
       if (!res.ok) {
         const errorText = await res.text();
         throw new Error(`Server error: ${errorText}`);
@@ -73,29 +73,17 @@ const UpdateProject = () => {
 
     try {
       const res = await fetch(
-        `${
-          import.meta.env.VITE_BACKEND_URL
-        }/api/cloneAndAddProject/${clientId}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/cloneAndAddProject/${clientId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-<<<<<<< HEAD
-            // projectName taken from existing project
             projectName: existingData.projectName + " - Update",
             projectDescription: formData.projectDescription,
             projectTime: new Date(formData.meetingDate).toISOString(),
-            projectAddress: formData.address,
+            projectAddress: existingData.projectAddress,
             projectMeetingOutcome: formData.meetingOutcome || null,
             projectworked: formData.pointsToBeWorked || null,
-=======
-            projectName: existingData.projectName + " - Update",
-            projectDescription: formData.projectDescription,
-            projectTime: new Date(formData.meetingDate).toISOString(),
-            projectAddress: existingData.projectAddress, // ✅ Auto-use existing address
-            projectMeetingOutcome: formData.meetingOutcome,
-            projectworked: formData.pointsToBeWorked,
->>>>>>> 3cd2c3e (ui update)
           }),
         }
       );
