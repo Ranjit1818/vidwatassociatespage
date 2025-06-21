@@ -29,7 +29,7 @@ const UpdateProject = () => {
     e.preventDefault();
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/getProject/${clientId}`
+        `${import.meta.env.VITE_BACKEND_URL}/getProject/${clientId}`
       );
 
       const contentType = res.headers.get("Content-Type") || "";
@@ -73,7 +73,7 @@ const UpdateProject = () => {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/cloneAndAddProject/${clientId}`,
+        `${import.meta.env.VITE_BACKEND_URL}/cloneAndAddProject/${clientId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
