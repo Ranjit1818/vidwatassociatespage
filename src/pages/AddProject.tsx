@@ -40,7 +40,7 @@ const AddProject = () => {
 
   try {
     const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/addProject`,
+      `${import.meta.env.VITE_BACKEND_URL}/addProject`,
       {
         method: "POST",
         headers: {
